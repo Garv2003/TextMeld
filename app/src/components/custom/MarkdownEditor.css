@@ -1,0 +1,101 @@
+/* Overall preview container styling */
+.preview {
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Styling for headers (h1, h2, etc.) */
+.preview h1,
+.preview h2,
+.preview h3,
+.preview h4,
+.preview h5,
+.preview h6 {
+    color: #333;
+    font-family: 'Roboto', sans-serif;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.preview h1 {
+    font-size: 2.5rem;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.preview h2 {
+    font-size: 2rem;
+}
+
+.preview h3 {
+    font-size: 1.75rem;
+}
+
+.preview h4 {
+    font-size: 1.5rem;
+}
+
+.preview h5 {
+    font-size: 1.25rem;
+}
+
+.preview h6 {
+    font-size: 1.125rem;
+    font-weight: bold;
+}
+
+/* Styling for lists */
+.preview ul,
+.preview ol {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+
+.preview ul li,
+.preview ol li {
+    line-height: 1.8;
+    margin-bottom: 8px;
+}
+
+/* Styling for code blocks */
+.preview pre {
+    background-color: #2d2d2d;
+    color: #f8f8f2;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin-top: 10px;
+}
+
+.preview code {
+    background-color: #f7f7f7;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    color: #d63384;
+}
+
+/* Styling for links */
+.preview a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.preview a:hover {
+    text-decoration: underline;
+}
+
+/* Styling for blockquotes */
+.preview blockquote {
+    background-color: #f7f7f7;
+    border-left: 4px solid #007bff;
+    padding-left: 16px;
+    margin: 16px 0;
+    font-style: italic;
+    color: #666;
+}
