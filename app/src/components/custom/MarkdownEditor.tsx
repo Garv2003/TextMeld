@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { marked } from 'marked';
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,12 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Upload, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import 'highlight.js/styles/github-dark.css';
-
-// Configure marked with syntax highlighting
-marked.setOptions({
-    gfm: true,
-    breaks: true,
-});
+import showdown from 'showdown';
 
 const MarkdownEditor: React.FC = () => {
     const [markdown, setMarkdown] = useState<string>('');
@@ -21,7 +15,12 @@ const MarkdownEditor: React.FC = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const getMarkdownPreview = () => {
-        return { __html: marked(markdown) };
+        var converter = new showdown.Converter({
+            tables: true,
+            simplifiedAutoLink: true,
+            excludeTrailingPunctuationFromURLs: true
+        });
+        return { __html: converter.makeHtml(markdown) };
     };
 
     const handleMarkdownChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -74,7 +73,7 @@ const MarkdownEditor: React.FC = () => {
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragging(false);
-        
+
         const file = e.dataTransfer.files[0];
         if (file && (file.name.endsWith('.md') || file.name.endsWith('.markdown'))) {
             const reader = new FileReader();
@@ -152,7 +151,7 @@ const MarkdownEditor: React.FC = () => {
                                     value={markdown}
                                     onChange={handleMarkdownChange}
                                     placeholder="Write your markdown here..."
-                                    className="h-full font-mono resize-none focus-visible:ring-1 bg-background scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-400 dark:hover:scrollbar-thumb-slate-500 transition-colors duration-200"
+                                    className="h-full font-mono resize-none focus-visible:ring-1 bg-background transition-colors duration-200"
                                 />
                             </div>
                         </CardContent>
@@ -163,7 +162,7 @@ const MarkdownEditor: React.FC = () => {
                             <CardTitle className="text-lg font-semibold">Preview</CardTitle>
                         </CardHeader>
                         <CardContent className="flex-1 p-0">
-                            <ScrollArea className="h-full p-4 bg-background scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-400 dark:hover:scrollbar-thumb-slate-500">
+                            <ScrollArea className="h-[70vh] p-4 bg-background">
                                 <div
                                     className="prose prose-sm dark:prose-invert max-w-none animate-in fade-in duration-200"
                                     dangerouslySetInnerHTML={getMarkdownPreview()}
@@ -212,7 +211,7 @@ const MarkdownEditor: React.FC = () => {
                             <CardContent className="flex-1 p-4">
                                 <ScrollArea className="h-full bg-background scrollbar-thin scrollbar-thumb-rounded-md scrollbar-track-transparent scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 hover:scrollbar-thumb-slate-400 dark:hover:scrollbar-thumb-slate-500">
                                     <div
-                                        className="prose prose-sm dark:prose-invert max-w-none animate-in fade-in duration-200"
+                                        className="h-[68vh] prose prose-sm dark:prose-invert max-w-none animate-in fade-in duration-200"
                                         dangerouslySetInnerHTML={getMarkdownPreview()}
                                     />
                                 </ScrollArea>
