@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useRef } from 'react';
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
