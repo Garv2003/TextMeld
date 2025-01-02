@@ -1,22 +1,6 @@
-import MarkdownEditor from '@/components/custom/MarkdownEditor';
-import { ModeToggle } from '@/components/custom/MoonToggle';
+import { redirect } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid';
 
-const Editor = () => {
-    return (
-        <div className="min-h-screen bg-background text-foreground">
-            <div className="w-full h-screen flex flex-col p-2 sm:p-4 lg:p-6">
-                <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 sm:mb-6 px-2 sm:px-0">
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">
-                        Markdown Editor
-                    </h1>
-                    <ModeToggle />
-                </header>
-                <div className="flex-1 rounded-lg bg-card text-card-foreground shadow-sm">
-                    <MarkdownEditor />
-                </div>
-            </div>
-        </div>
-    )
+export default function Page() {
+    redirect(`/editor/${uuidv4()}`);
 }
-
-export default Editor

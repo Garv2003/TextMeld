@@ -28,7 +28,10 @@ export function ThemeProvider({
     ...props
 }: ThemeProviderProps) {
     const [theme, setTheme] = useState<Theme>(
-        () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+        () =>
+            typeof window !== "undefined" &&
+            (localStorage.getItem(storageKey) as Theme) ||
+            defaultTheme
     )
 
     useEffect(() => {
@@ -41,7 +44,7 @@ export function ThemeProvider({
                 const isDark = systemTheme.matches
                 root.classList.toggle("dark", isDark)
             }
-            handleChange() // Initial check
+            handleChange() 
             systemTheme.addEventListener("change", handleChange)
             return () => systemTheme.removeEventListener("change", handleChange)
         }

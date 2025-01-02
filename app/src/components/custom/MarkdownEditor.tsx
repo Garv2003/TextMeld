@@ -1,22 +1,33 @@
 "use client";
-import React, { useState, useRef } from 'react';
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fetchReadme, updateReadme, changeReadmeName } from "@/actions/db";
+import { Download, Upload, FileText, Copy } from "lucide-react";
+import React, { useState, useRef, useEffect } from 'react';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, FileText } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { User } from "@supabase/supabase-js";
 import 'highlight.js/styles/github-dark.css';
+import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils";
 import showdown from 'showdown';
 
-const MarkdownEditor: React.FC = () => {
+const MarkdownEditor: React.FC<{ id: string; user: User | null, loading: boolean }> = ({ id, user, loading }: { id: string; user: User | null, loading: boolean }) => {
+    const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+    const [loadingFile, setLoadingFile] = useState(true);
+    const [readmeName, setReadmeName] = useState<string>('');
+    const [saveLoading, setSaveLoading] = useState(false);
     const [markdown, setMarkdown] = useState<string>('');
     const [isDragging, setIsDragging] = useState(false);
+    const [isCopied, setIsCopied] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const { toast } = useToast();
+
     const getMarkdownPreview = () => {
-        var converter = new showdown.Converter({
+        const converter = new showdown.Converter({
             tables: true,
             simplifiedAutoLink: true,
             excludeTrailingPunctuationFromURLs: true
@@ -26,6 +37,17 @@ const MarkdownEditor: React.FC = () => {
 
     const handleMarkdownChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setMarkdown(event.target.value);
+
+        if (user) {
+            if (autoSaveTimeout) {
+                clearTimeout(autoSaveTimeout);
+            }
+
+            const timeout = setTimeout(() => {
+                handleSave();
+            }, 2000);
+            setAutoSaveTimeout(timeout);
+        }
     };
 
     const handleDownload = () => {
@@ -38,6 +60,22 @@ const MarkdownEditor: React.FC = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        toast({
+            title: 'Download successful',
+            description: 'Your document has been downloaded successfully',
+        })
+    };
+
+    const handleCipboardClick = async () => {
+        setIsCopied(true);
+        await navigator.clipboard.writeText(markdown);
+        toast({
+            title: 'Copied to clipboard',
+            description: 'Your document has been copied to the clipboard',
+        })
+        setTimeout(() => {
+            setIsCopied(false);
+        }, 2000);
     };
 
     const handleUploadClick = () => {
@@ -88,6 +126,102 @@ const MarkdownEditor: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        const fetchReadmeData = async () => {
+            setLoadingFile(true);
+            if (user) {
+                const { data, error } = await fetchReadme(id, user.id);
+                if (data && data.length > 0) {
+                    setReadmeName(data[0].name);
+                    setMarkdown(data[0].content);
+                }
+                if (error) {
+                    toast({
+                        title: 'Error',
+                        description: error.message,
+                        variant: 'destructive',
+                    })
+                }
+            }
+            setLoadingFile(false);
+        };
+        fetchReadmeData();
+    }, [id, user]);
+
+    useEffect(() => {
+        return () => {
+            if (autoSaveTimeout) {
+                clearTimeout(autoSaveTimeout);
+            }
+        };
+    }, [autoSaveTimeout]);
+
+    const handleSave = async () => {
+        setSaveLoading(true);
+        if (!user) {
+            toast({
+                title: 'Error',
+                description: 'You are not logged in',
+                variant: 'destructive',
+            })
+            setSaveLoading(false);
+            return;
+        }
+        const { error } = await updateReadme(id, markdown);
+        if (error) {
+            toast({
+                title: 'Error',
+                description: error.message,
+                variant: 'destructive',
+            })
+            setSaveLoading(false);
+            return;
+        }
+        toast({
+            title: 'Saved',
+            description: 'Your document has been saved successfully',
+        })
+        setSaveLoading(false);
+    };
+
+    function debounce<T extends (...args: any[]) => any>(
+        func: T,
+        delay: number
+    ): (...args: Parameters<T>) => void {
+        let timer: ReturnType<typeof setTimeout>;
+
+        return (...args: Parameters<T>) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => func(...args), delay);
+        };
+    }
+
+    const handleChangeReadmeName = async (name: string) => {
+        setReadmeName(name);
+        handleNameChange(name);
+    };
+
+    const handleNameChange = debounce(async (name: string) => {
+        if (user) {
+            const { error } = await changeReadmeName(id, name);
+            if (error) {
+                toast({
+                    title: 'Error',
+                    description: error.message,
+                    variant: 'destructive',
+                })
+            }
+        }
+    }, 1000);
+
+    if (loading || loadingFile) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="w-16 h-16 border-4 border-dotted rounded-full animate-spin border-blue-500"></div>
+            </div>
+        )
+    }
+
     return (
         <div className="flex flex-col h-full">
             <div className="flex justify-between items-center px-4 py-2 border-b">
@@ -96,6 +230,12 @@ const MarkdownEditor: React.FC = () => {
                     <span className="text-sm font-medium">
                         {markdown ? `${markdown.split(' ').length} words` : 'No content'}
                     </span>
+                    <Input
+                        type="text"
+                        value={readmeName}
+                        onChange={(e) => handleChangeReadmeName(e.target.value)}
+                        className="bg-transparent text-sm font-medium text-muted-foreground border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    />
                 </div>
                 <div className="flex gap-2">
                     <input
@@ -113,6 +253,51 @@ const MarkdownEditor: React.FC = () => {
                     >
                         <Upload className="h-4 w-4" />
                         Upload
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={!markdown || saveLoading}
+                        className="flex items-center gap-2 transition-all hover:scale-105"
+                    >
+                        {saveLoading ? (
+                            <svg
+                                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                ></circle>
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                        ) : (
+                            <>
+                                <FileText className="h-4 w-4" />
+                                Save
+                            </>
+                        )}
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCipboardClick}
+                        disabled={!markdown || isCopied}
+                        className="flex items-center gap-2 transition-all hover:scale-105"
+                    >
+                        <Copy className="h-4 w-4" />
+                        {isCopied ? 'Copied' : 'Copy'}
                     </Button>
                     <Button
                         variant="outline"
@@ -162,10 +347,10 @@ const MarkdownEditor: React.FC = () => {
                         <CardHeader className="pb-3">
                             <CardTitle className="text-lg font-semibold">Preview</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex-1 p-0">
-                            <ScrollArea className="h-[70vh] p-4 bg-background">
+                        <CardContent className="h-[70vh] flex-1 p-0">
+                            <ScrollArea className="p-4 pb-2 bg-background">
                                 <div
-                                    className="prose prose-sm dark:prose-invert max-w-none animate-in fade-in duration-200"
+                                    className="min-h-[626px] w-full prose prose-sm dark:prose-invert max-w-none border flex-1 rounded-md p-2 animate-in fade-in duration-200"
                                     dangerouslySetInnerHTML={getMarkdownPreview()}
                                 />
                             </ScrollArea>
